@@ -1,7 +1,7 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useScrollReveal } from '../hooks/useScrollReveal';
-import { Folder, ExternalLink, Lock } from 'lucide-react';
+import { Folder, ExternalLink, Lock, Info, X } from 'lucide-react';
 import { TiltCard } from './TiltCard';
 
 interface Project {
@@ -13,7 +13,7 @@ interface Project {
   demo?: string;
 }
 
-const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
+const ProjectCard: React.FC<{ project: Project; onShowDetails?: (project: Project) => void }> = ({ project, onShowDetails }) => {
   return (
     <TiltCard
       className="group relative flex h-full flex-col justify-between rounded-xl border border-border bg-surface p-6 shadow-sm hover:border-accent/50 hover:shadow-accent-glow cursor-pointer"
@@ -51,9 +51,23 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
         {/* Footer Actions */}
         <div className="flex items-center justify-between border-t border-border/30 pt-4 mt-2">
           {project.github === 'private' ? (
-            <div className="flex items-center gap-1.5 font-body text-xs text-text-muted select-none">
-              <Lock className="h-3.5 w-3.5 text-text-muted/65" />
-              <span>Private Code</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 font-body text-xs text-text-muted select-none">
+                <Lock className="h-3.5 w-3.5 text-text-muted/65" />
+                <span>Private Code</span>
+              </div>
+              {onShowDetails && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onShowDetails(project);
+                  }}
+                  className="flex items-center gap-1 font-body text-xs text-accent hover:text-accent-hover font-semibold transition-colors"
+                >
+                  <Info className="h-3.5 w-3.5" />
+                  <span>Show Details</span>
+                </button>
+              )}
             </div>
           ) : project.github ? (
             <a
@@ -95,6 +109,13 @@ export const Projects: React.FC = () => {
 
   const projectsData: Project[] = [
     {
+      title: 'Prescreener',
+      description: 'AI-powered technical pre-screening interview platform. Automates initial candidate screening via conversational voice agents, transcribe-and-rate pipelines, and visual analytics dashboards. Styled with a custom dark-theme Espresso & Amber design system.',
+      tech: ['React (Vite)', 'FastAPI', 'Vapi SDK', 'Groq API', 'SQLAlchemy', 'SQLite'],
+      domain: 'AI Screening Platform',
+      github: 'https://github.com/sanjana-jaiswal/Prescreener',
+    },
+    {
       title: 'INAC (AI-powered Law Chatbot)',
       description: 'Full-stack AI chatbot developed at smartData Enterprises. Implemented UI components, Python scraper modules for cleaning raw legal text datasets, and fine-tuning parameters. Integrated autonomous agentic layers for decision-making and context awareness.',
       tech: ['React (Vite)', 'Node.js', 'Python', 'Web Scraping', 'AI Agentic Layer'],
@@ -103,8 +124,8 @@ export const Projects: React.FC = () => {
     },
     {
       title: 'Lip-syncing Avatar (POC)',
-      description: 'Developed a real-time lip-syncing 3D avatar application. Converts user text to speech (TTS) synthesis, animating avatar lips/mouth shapes in exact alignment with generated audio output streams with low latency optimizations.',
-      tech: ['React', 'Python', 'FastAPI', 'TTS Systems', '3D Animation Sync'],
+      description: 'Developed a real-time lip-syncing 3D avatar application leveraging the SadTalker pretrained model. Converts user text to speech (TTS) synthesis, animating avatar lips/mouth shapes in exact alignment with generated audio output streams with low latency optimizations.',
+      tech: ['React', 'Python', 'FastAPI', 'SadTalker', 'TTS Systems', '3D Animation Sync'],
       domain: 'Artificial Intelligence',
       github: 'private',
     },
@@ -137,6 +158,34 @@ export const Projects: React.FC = () => {
       github: 'https://github.com/sanjana-jaiswal/Kidney-Disease-Prediction',
     },
   ];
+
+  const [activeDetailsProject, setActiveDetailsProject] = useState<Project | null>(null);
+
+  const privateProjectDetails: Record<string, { role: string; overview: string; contributions: string[] }> = {
+    'INAC (AI-powered Law Chatbot)': {
+      role: 'Software Analyst — GenAI/Full-Stack',
+      overview: 'INAC is an enterprise-grade AI law chatbot developed at smartData Enterprises to navigate and query complex legal texts with high context accuracy and guardrails.',
+      contributions: [
+        'Engineered Python-based web scrapers to crawl, sanitize, and prepare massive unstructured raw legal document datasets.',
+        'Fine-tuned model search embeddings and parameters to maximize relevancy for domain-specific queries.',
+        'Built Retrieval-Augmented Generation (RAG) pipelines with strict context boundaries and validation logic.',
+        'Designed a multi-agent orchestration layer that automatically expands queries, routes intent, and aggregates legal citations.',
+        'Crafted the responsive frontend chat panel in React featuring real-time stream tokenizing and dynamic tooltips.'
+      ]
+    },
+    'Lip-syncing Avatar (POC)': {
+      role: 'Software Analyst — AI/ML POC',
+      overview: 'An interactive proof-of-concept integrating 3D avatars with real-time, low-latency text-to-speech audio outputs and face mesh morph target mappings, utilizing the SadTalker pretrained model.',
+      contributions: [
+        'Integrated and customized the SadTalker pretrained generative model to drive facial animations and talking head sequences from input speech and photos.',
+        'Developed a streaming Text-to-Speech (TTS) pipeline that synthesizes text response buffers into high-fidelity audio streams.',
+        'Mapped viseme and phenome structures dynamically to 3D blendshape models for accurate visual lip-sync animations.',
+        'Optimized FastAPI web servers to stream audio byte buffers and synchronization timestamps concurrently.',
+        'Created WebGL-based 3D render loops in React to draw, scale, and update avatar meshes smoothly.',
+        'Reduced audio synthesis and facial animation dispatch latency to under 150ms for natural conversation flows.'
+      ]
+    }
+  };
 
   return (
     <section id="projects" className="relative py-24 bg-transparent overflow-hidden">
@@ -174,12 +223,99 @@ export const Projects: React.FC = () => {
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 className="h-full flex flex-col"
               >
-                <ProjectCard project={project} />
+                <ProjectCard project={project} onShowDetails={(p) => setActiveDetailsProject(p)} />
               </motion.div>
             ))}
           </div>
         </motion.div>
       </div>
+
+      {/* Details Modal Lightbox overlay */}
+      <AnimatePresence>
+        {activeDetailsProject && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setActiveDetailsProject(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm cursor-zoom-out"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl overflow-hidden rounded-xl border border-border bg-surface p-6 sm:p-8 shadow-2xl cursor-default"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setActiveDetailsProject(null)}
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-bg border border-border text-text-secondary hover:text-accent hover:border-accent transition-colors"
+                title="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="mb-6">
+                <span className="font-body text-xs font-semibold uppercase tracking-wider text-accent">
+                  {activeDetailsProject.domain}
+                </span>
+                <h4 className="mt-1 font-heading text-2xl font-bold text-text-primary">
+                  {activeDetailsProject.title}
+                </h4>
+                {privateProjectDetails[activeDetailsProject.title]?.role && (
+                  <p className="mt-1 font-body text-xs font-semibold text-text-muted uppercase tracking-wider">
+                    {privateProjectDetails[activeDetailsProject.title].role}
+                  </p>
+                )}
+              </div>
+
+              {/* Modal Content */}
+              <div className="space-y-6">
+                <div>
+                  <h5 className="mb-2 font-heading text-sm font-bold uppercase tracking-wider text-text-primary">
+                    Project Overview
+                  </h5>
+                  <p className="font-body text-sm leading-relaxed text-text-secondary">
+                    {privateProjectDetails[activeDetailsProject.title]?.overview || activeDetailsProject.description}
+                  </p>
+                </div>
+
+                {privateProjectDetails[activeDetailsProject.title]?.contributions && (
+                  <div>
+                    <h5 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-text-primary">
+                      Key Contributions & Accomplishments
+                    </h5>
+                    <ul className="space-y-2.5">
+                      {privateProjectDetails[activeDetailsProject.title].contributions.map((bullet, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5 font-body text-xs leading-relaxed text-text-secondary">
+                          <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent" />
+                          <span>{bullet}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Tech Stack */}
+                <div className="border-t border-border/40 pt-5">
+                  <h5 className="mb-3 font-heading text-xs font-bold uppercase tracking-wider text-text-muted">
+                    Technologies Employed
+                  </h5>
+                  <div className="flex flex-wrap gap-2">
+                    {activeDetailsProject.tech.map((t, idx) => (
+                      <span key={idx} className="rounded bg-bg border border-border px-2.5 py-1 font-body text-[11px] text-text-secondary">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
